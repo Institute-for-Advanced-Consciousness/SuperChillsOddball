@@ -213,11 +213,15 @@ class ChillsMarkerOutlet:
     def active_practice_passed(self) -> tuple[str, float]:
         return self.emit("active_practice_passed")
 
-    def active_practice_tone_standard(self) -> tuple[str, float]:
-        return self.emit("active_practice_tone_standard")
+    def active_practice_tone_standard(
+        self, *, timestamp: float | None = None
+    ) -> tuple[str, float]:
+        return self.emit("active_practice_tone_standard", timestamp=timestamp)
 
-    def active_practice_tone_deviant(self) -> tuple[str, float]:
-        return self.emit("active_practice_tone_deviant")
+    def active_practice_tone_deviant(
+        self, *, timestamp: float | None = None
+    ) -> tuple[str, float]:
+        return self.emit("active_practice_tone_deviant", timestamp=timestamp)
 
     def active_practice_end(self, attempt: int) -> tuple[str, float]:
         return self.emit("active_practice_end", {"attempt": attempt})

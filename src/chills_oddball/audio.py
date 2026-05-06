@@ -185,10 +185,16 @@ class ToneScheduler:
         block_idx: int,
         condition: str,
         rng: random.Random,
+        *,
+        practice: bool = False,
     ) -> list[TrialRecord]:
         """Play one oddball block. Blocks until the last tone has finished.
 
         Returns a list of TrialRecord for the per-block CSV.
+
+        When ``practice=True``, emits ``active_practice_tone_*`` markers
+        instead of the regular ``tone_*`` markers (CLAUDE.md marker scheme
+        for the active oddball practice phase).
         """
         n_trials = len(sequence)
         if n_trials == 0:
@@ -250,14 +256,20 @@ class ToneScheduler:
                 ts = float(t0_lsl["v"]) + onset_samples[idx] / self._sample_rate
                 is_dev = bool(sequence[idx])
                 try:
-                    if is_dev:
-                        self.outlet.tone_deviant(
-                            trial=idx, condition=condition, timestamp=ts
-                        )
+                    if practice:
+                        if is_dev:
+                            self.outlet.active_practice_tone_deviant(timestamp=ts)
+                        else:
+                            self.outlet.active_practice_tone_standard(timestamp=ts)
                     else:
-                        self.outlet.tone_standard(
-                            trial=idx, condition=condition, timestamp=ts
-                        )
+                        if is_dev:
+                            self.outlet.tone_deviant(
+                                trial=idx, condition=condition, timestamp=ts
+                            )
+                        else:
+                            self.outlet.tone_standard(
+                                trial=idx, condition=condition, timestamp=ts
+                            )
                 except Exception:  # noqa: BLE001 — never crash the audio thread
                     logger.exception(
                         "marker push failed for trial %d in block %d", idx, block_idx
