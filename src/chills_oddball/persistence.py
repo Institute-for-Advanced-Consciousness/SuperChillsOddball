@@ -200,6 +200,22 @@ class SessionWriter:
         self._write_block_csv(record)
         self._write_partial()
 
+    def mark_pending_blocks_aborted(self) -> int:
+        """Set status='aborted' on any block that is still 'pending'.
+
+        Returns the number of blocks updated. Called by the app-level abort
+        handler so an in-flight block (between start_block and end_block)
+        is correctly recorded as having been interrupted.
+        """
+        n = 0
+        for rec in self.blocks:
+            if rec.status == "pending":
+                rec.status = "aborted"
+                n += 1
+        if n:
+            self._write_partial()
+        return n
+
     def set_block_ratings(self, idx: int, ratings: dict[str, Any]) -> None:
         """Attach ratings to an already-ended block and refresh PARTIAL.
 

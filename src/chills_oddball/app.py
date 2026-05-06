@@ -18,6 +18,7 @@ import logging
 import sys
 import tkinter as tk
 from collections.abc import Iterable
+from tkinter import messagebox
 from typing import Any
 
 from .config import Config, load_config
@@ -95,6 +96,9 @@ class App:
             if cls.NAME in self._frames:
                 raise ValueError(f"duplicate stage NAME: {cls.NAME!r}")
             self._frames[cls.NAME] = cls(self)
+        # Abort hooks: Escape key + window-close button.
+        self.root.bind("<Escape>", self._on_escape)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_window_close)
 
     # ----- public API used by stages --------------------------------------
 
@@ -155,6 +159,54 @@ class App:
             self.show_stage("completion")
         else:
             self.show_block(next_idx)
+
+    # ----- abort handling -------------------------------------------------
+
+    # Test seam: tests monkeypatch this to skip the Tk modal dialog.
+    confirm_abort = staticmethod(
+        lambda: messagebox.askyesno(
+            "Abort session?",
+            "Abort session?\n\nData so far will be saved as a PARTIAL_session.json.",
+            icon="warning",
+        )
+    )
+
+    def _on_escape(self, _event: object = None) -> None:
+        if self.config.abort.require_confirmation:
+            if not self.confirm_abort():
+                return
+        self.abort()
+
+    def _on_window_close(self) -> None:
+        if self.config.abort.require_confirmation:
+            if not self.confirm_abort():
+                return
+        self.abort()
+
+    def abort(self) -> None:
+        """Mark the session as aborted, refresh PARTIAL, close outlet, exit.
+
+        Idempotent — safe to call multiple times. Does not raise even if
+        services are partially attached or already shut down.
+        """
+        logger.warning("abort requested at stage %s", self._current)
+        if self.outlet is not None and self.config.abort.emit_session_abort_marker:
+            try:
+                self.outlet.session_abort()
+            except Exception:  # noqa: BLE001
+                logger.exception("session_abort marker push failed")
+        if self.writer is not None:
+            try:
+                self.writer.mark_pending_blocks_aborted()
+                self.writer.finalize(status="aborted")
+            except Exception:  # noqa: BLE001
+                logger.exception("writer.finalize(aborted) failed")
+        if self.outlet is not None:
+            try:
+                self.outlet.close()
+            except Exception:  # noqa: BLE001
+                logger.exception("outlet.close failed")
+        self.shutdown()
 
     # ----- lifecycle ------------------------------------------------------
 
