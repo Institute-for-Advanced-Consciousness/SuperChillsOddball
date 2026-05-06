@@ -16,6 +16,7 @@ dependencies = [
     "pyyaml>=6.0",
     "pydantic>=2.5",
     "rich>=13.7",
+    "pyxdf>=1.16",
 ]
 
 [project.optional-dependencies]

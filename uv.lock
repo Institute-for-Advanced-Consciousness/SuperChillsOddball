@@ -89,6 +89,7 @@ dependencies = [
     { name = "numpy" },
     { name = "pydantic" },
     { name = "pylsl" },
+    { name = "pyxdf" },
     { name = "pyyaml" },
     { name = "rich" },
     { name = "scipy" },
@@ -114,6 +115,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.5" },
     { name = "pylsl", specifier = ">=1.16" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pyxdf", specifier = ">=1.16" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.7" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
@@ -430,6 +432,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7d/0d/549bd94f1a0a402dc8cf64563a117c0f3765662e2e668477624baeec44d5/pytest-9.0.3.tar.gz", hash = "sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c", size = 1572165, upload-time = "2026-04-07T17:16:18.027Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d4/24/a372aaf5c9b7208e7112038812994107bc65a84cd00e0354a88c2c77a617/pytest-9.0.3-py3-none-any.whl", hash = "sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9", size = 375249, upload-time = "2026-04-07T17:16:16.13Z" },
+]
+
+[[package]]
+name = "pyxdf"
+version = "1.17.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/26/91fcfff3085de235a12cbfab5b1b4c846265c6abe97a812e3c5d8ef5d79f/pyxdf-1.17.4.tar.gz", hash = "sha256:374e3e306a5277d0ee9e2482adcb2211e6e059758ff3afcf56f3919245dae2ac", size = 35479, upload-time = "2026-03-25T16:23:05.187Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/14/2c/a4d013d70e71728b240a3e5b4e7f5c695df9096f3a154c1693f33bdb7cff/pyxdf-1.17.4-py3-none-any.whl", hash = "sha256:812118f590a87afe574171e901ddffd1304a5c1a27e2892cba420bef2f5803c1", size = 21602, upload-time = "2026-03-25T16:23:03.659Z" },
 ]
 
 [[package]]
