@@ -73,8 +73,18 @@ class App:
         self.root = tk.Tk()
         self.root.title("IACS Chills × Oddball Study")
         self.root.configure(bg=self.config.display.background_color)
-        # Reasonable starting geometry; fullscreen is wired in Step 13.
+        # Reasonable starting geometry as a fallback.
         self.root.geometry("1024x720")
+        if self.config.display.fullscreen:
+            try:
+                self.root.attributes("-fullscreen", True)
+            except tk.TclError:
+                self._maximize_window()
+        else:
+            self._maximize_window()
+
+        # Scale fonts to the actual screen so dense screens (intake) fit.
+        self._scale_display_fonts()
 
         # Runtime services attached by the intake stage on Begin Session.
         self.outlet = None  # ChillsMarkerOutlet
@@ -88,6 +98,36 @@ class App:
         self._frames: dict[str, StageFrame] = {}
         self._current: str | None = None
         self._register_frames(_STAGE_CLASSES)
+
+    def _maximize_window(self) -> None:
+        try:
+            self.root.state("zoomed")
+        except tk.TclError:
+            try:
+                self.root.attributes("-zoomed", True)
+            except tk.TclError:
+                pass
+
+    def _scale_display_fonts(self) -> None:
+        """Scale the configured font sizes to the current screen height.
+
+        The YAML defaults are tuned for ~1080 px; on shorter laptop panels
+        (768 / 900 px) the heading + dense intake content overflow before
+        the Begin button. Compute a scale factor against a 1080 reference
+        so the same content fits on any single-laptop deployment.
+        """
+        try:
+            self.root.update_idletasks()
+            screen_h = self.root.winfo_screenheight()
+        except tk.TclError:
+            return
+        if screen_h <= 0:
+            return
+        scale = max(0.65, min(1.4, screen_h / 1080.0))
+        d = self.config.display
+        d.font_size_heading = max(20, round(d.font_size_heading * scale))
+        d.font_size_instruction = max(14, round(d.font_size_instruction * scale))
+        d.font_size_normal = max(11, round(d.font_size_normal * scale))
 
     def _register_frames(self, classes: Iterable[type[StageFrame]]) -> None:
         for cls in classes:

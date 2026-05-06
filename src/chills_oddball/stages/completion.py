@@ -37,7 +37,7 @@ class CompletionFrame(StageFrame):
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
             fg=theme.ACCENT_LIGHT,
             bg=theme.CHROME_BG,
-        ).pack(pady=(60, 20))
+        ).pack(side="top", pady=(30, 10))
 
         self.body_var = tk.StringVar(
             value=self.app.config.instructions.get(
@@ -50,19 +50,9 @@ class CompletionFrame(StageFrame):
             font=(cfg.font_family, cfg.font_size_instruction),
             fg=theme.TEXT,
             bg=theme.CHROME_BG,
-        ).pack(pady=20)
+        ).pack(side="top", pady=10)
 
-        self.summary_var = tk.StringVar(value="")
-        tk.Label(
-            self,
-            textvariable=self.summary_var,
-            font=(cfg.font_family, cfg.font_size_normal),
-            fg=theme.TEXT,
-            bg=theme.CHROME_BG,
-            justify="left",
-            wraplength=800,
-        ).pack(pady=20)
-
+        # Pin Save & Exit to the bottom so the RA can always reach it.
         tk.Button(
             self,
             text="Save & Exit",
@@ -72,7 +62,20 @@ class CompletionFrame(StageFrame):
             padx=12,
             pady=8,
             **theme.PRIMARY_BUTTON,
-        ).pack(pady=30)
+        ).pack(side="bottom", pady=18)
+
+        self.summary_var = tk.StringVar(value="")
+        summary_label = tk.Label(
+            self,
+            textvariable=self.summary_var,
+            font=(cfg.font_family, cfg.font_size_normal),
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
+            justify="left",
+            wraplength=800,
+        )
+        summary_label.pack(side="top", fill="both", expand=True, pady=10)
+        self.register_wrappable(summary_label, ratio=0.85)
 
     def on_enter(self, **_: Any) -> None:
         self.summary_var.set(self._build_summary())

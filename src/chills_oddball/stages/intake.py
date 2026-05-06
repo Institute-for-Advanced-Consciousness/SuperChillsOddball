@@ -33,24 +33,48 @@ class IntakeFrame(StageFrame):
         cfg = self.app.config.display
         self.configure(bg=theme.CHROME_BG)
 
+        # ---- Bottom strip: pin error + Begin button so they're always
+        # ---- visible even if the body content is taller than the window.
+        self._error_var = tk.StringVar(value="")
+        tk.Label(
+            self,
+            textvariable=self._error_var,
+            font=(cfg.font_family, cfg.font_size_normal),
+            fg="#ff8888",
+            bg=theme.CHROME_BG,
+        ).pack(side="bottom", pady=(0, 6))
+
+        self._begin_btn = tk.Button(
+            self,
+            text="Begin Session",
+            font=(cfg.font_family, cfg.font_size_instruction, "bold"),
+            width=24,
+            state="disabled",
+            command=self._on_begin,
+            padx=12,
+            pady=8,
+            **theme.PRIMARY_BUTTON,
+        )
+        self._begin_btn.pack(side="bottom", pady=(4, 8))
+
+        # ---- Top strip: heading + sub + PID row.
         tk.Label(
             self,
             text=f"{self.app.config.session.protocol_label}",
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
             fg=theme.ACCENT_LIGHT,
             bg=theme.CHROME_BG,
-        ).pack(pady=(40, 6))
+        ).pack(side="top", pady=(12, 2))
         tk.Label(
             self,
             text=f"protocol: {self.app.config.session.protocol_id}",
             font=(cfg.font_family, cfg.font_size_normal, "italic"),
             fg=theme.TEXT_MUTED,
             bg=theme.CHROME_BG,
-        ).pack(pady=(0, 20))
+        ).pack(side="top", pady=(0, 6))
 
-        # Participant ID row.
         pid_row = tk.Frame(self, bg=theme.CHROME_BG)
-        pid_row.pack(pady=10)
+        pid_row.pack(side="top", pady=4)
         tk.Label(
             pid_row,
             text="Participant ID:",
@@ -73,50 +97,100 @@ class IntakeFrame(StageFrame):
             highlightcolor=theme.ACCENT_LIGHT,
         ).pack(side="left")
 
-        # Two-column body: parameter summary | pre-flight.
+        # ---- Middle: two-column body fills whatever vertical space is
+        # ---- left between the top strip and the pinned bottom strip.
         body = tk.Frame(self, bg=theme.CHROME_BG)
-        body.pack(fill="both", expand=True, padx=40, pady=20)
+        body.pack(side="top", fill="both", expand=True, padx=24, pady=8)
+        body.grid_columnconfigure(0, weight=1, uniform="cols")
+        body.grid_columnconfigure(1, weight=1, uniform="cols")
+        body.grid_rowconfigure(0, weight=1)
 
+        # Smaller `height` request so on short screens the Text widget
+        # shrinks rather than pushing the button off the bottom.
         self._summary_text = tk.Text(
-            body, width=60, height=18,
+            body, width=40, height=8,
             font=(cfg.font_family, cfg.font_size_normal),
             bg=theme.SURFACE, fg=theme.TEXT, relief="flat",
             insertbackground=theme.ACCENT_LIGHT,
             highlightthickness=1,
             highlightbackground=theme.DIVIDER,
+            wrap="word",
         )
-        self._summary_text.pack(side="left", padx=10, fill="both", expand=True)
+        self._summary_text.grid(row=0, column=0, padx=8, sticky="nsew")
 
-        self._preflight_text = tk.Text(
-            body, width=40, height=18,
-            font=(cfg.font_family, cfg.font_size_normal),
-            bg=theme.SURFACE, fg=theme.TEXT, relief="flat",
-            insertbackground=theme.ACCENT_LIGHT,
+        self._preflight_frame = tk.Frame(
+            body, bg=theme.SURFACE, padx=14, pady=10,
             highlightthickness=1,
             highlightbackground=theme.DIVIDER,
         )
-        self._preflight_text.pack(side="left", padx=10, fill="both", expand=True)
+        self._preflight_frame.grid(row=0, column=1, padx=8, sticky="nsew")
 
-        self._begin_btn = tk.Button(
-            self,
-            text="Begin Session",
-            font=(cfg.font_family, cfg.font_size_instruction, "bold"),
-            width=24,
-            command=self._on_begin,
-            padx=12,
-            pady=8,
-            **theme.PRIMARY_BUTTON,
-        )
-        self._begin_btn.pack(pady=20)
-
-        self._error_var = tk.StringVar(value="")
         tk.Label(
-            self,
-            textvariable=self._error_var,
-            font=(cfg.font_family, cfg.font_size_normal),
-            fg="#ff8888",
-            bg=theme.CHROME_BG,
-        ).pack(pady=(0, 10))
+            self._preflight_frame,
+            text="PRE-FLIGHT CHECKLIST",
+            font=(cfg.font_family, cfg.font_size_normal, "bold"),
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.SURFACE,
+            anchor="w",
+            justify="left",
+        ).pack(fill="x", pady=(0, 4))
+        tk.Label(
+            self._preflight_frame,
+            text="Tick every item before launching:",
+            font=(cfg.font_family, cfg.font_size_normal, "italic"),
+            fg=theme.TEXT,
+            bg=theme.SURFACE,
+            anchor="w",
+            justify="left",
+        ).pack(fill="x", pady=(0, 6))
+
+        preflight_items = [
+            f"LabRecorder is running and recording the "
+            f"`{self.app.config.lsl.stream_name}` stream "
+            f"(plus EEG + CGX AIM-2 streams)",
+            "Headphones plugged in and on the participant",
+            "Audio device verified (volume check is next)",
+            "Participant briefed and consent on file",
+        ]
+        self._preflight_vars: list[tk.BooleanVar] = []
+        for item in preflight_items:
+            var = tk.BooleanVar(value=False)
+            var.trace_add("write", lambda *_: self._update_begin_button_state())
+            self._preflight_vars.append(var)
+            cb = tk.Checkbutton(
+                self._preflight_frame,
+                text=item,
+                variable=var,
+                font=(cfg.font_family, cfg.font_size_normal),
+                fg=theme.TEXT,
+                bg=theme.SURFACE,
+                activebackground=theme.SURFACE,
+                activeforeground=theme.ACCENT_LIGHT,
+                selectcolor=theme.ACCENT_DARK,
+                anchor="w",
+                justify="left",
+                wraplength=420,
+                padx=4,
+                pady=2,
+                cursor="hand2",
+            )
+            cb.pack(fill="x", anchor="w")
+            self.register_wrappable(cb, ratio=0.42, min_px=300)
+
+        tk.Label(
+            self._preflight_frame,
+            text=(
+                "Begin Session will: create the LSL outlet, "
+                "generate the block schedule, and open the "
+                "participant data folder."
+            ),
+            font=(cfg.font_family, cfg.font_size_normal - 2, "italic"),
+            fg=theme.TEXT_MUTED,
+            bg=theme.SURFACE,
+            anchor="w",
+            justify="left",
+            wraplength=420,
+        ).pack(fill="x", pady=(8, 0))
 
     # ------------------------------------------------------------ on_enter
 
@@ -137,10 +211,9 @@ class IntakeFrame(StageFrame):
         self._summary_text.insert("1.0", self._format_summary())
         self._summary_text.configure(state="disabled")
 
-        self._preflight_text.configure(state="normal")
-        self._preflight_text.delete("1.0", "end")
-        self._preflight_text.insert("1.0", self._format_preflight())
-        self._preflight_text.configure(state="disabled")
+        for var in self._preflight_vars:
+            var.set(False)
+        self._update_begin_button_state()
         self._error_var.set("")
 
     def _format_summary(self) -> str:
@@ -172,21 +245,9 @@ class IntakeFrame(StageFrame):
         ]
         return "\n".join(lines)
 
-    def _format_preflight(self) -> str:
-        # Static checks (the dynamic checks happen on _on_begin).
-        return (
-            "PRE-FLIGHT CHECKLIST\n\n"
-            "  [ ] LabRecorder is running and recording the\n"
-            f"      `{self.app.config.lsl.stream_name}` stream\n"
-            "      (plus EEG + CGX AIM-2 streams)\n\n"
-            "  [ ] Headphones plugged in and on the participant\n\n"
-            "  [ ] Audio device verified (volume check is next)\n\n"
-            "  [ ] Participant briefed and consent on file\n\n"
-            "Click Begin Session to:\n"
-            "  • create LSL marker outlet\n"
-            "  • generate the block schedule (random per session)\n"
-            "  • open the participant data folder\n"
-        )
+    def _update_begin_button_state(self) -> None:
+        all_checked = all(v.get() for v in self._preflight_vars)
+        self._begin_btn.configure(state="normal" if all_checked else "disabled")
 
     # ------------------------------------------------------------ begin
 

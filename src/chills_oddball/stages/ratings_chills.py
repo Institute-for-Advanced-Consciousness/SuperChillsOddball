@@ -32,22 +32,24 @@ class RatingsChillsFrame(StageFrame):
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
             fg=theme.ACCENT_LIGHT,
             bg=theme.CHROME_BG,
-        ).pack(pady=(40, 10))
+        ).pack(side="top", pady=(20, 6))
 
-        self._items_frame = tk.Frame(self, bg=theme.CHROME_BG)
-        self._items_frame.pack(fill="both", expand=True, padx=80, pady=10)
-
+        # Pin Submit button to the bottom so it stays reachable even when
+        # the items frame is taller than the visible window area.
         self._submit_btn = tk.Button(
             self,
             text="Submit",
-            font=(cfg.font_family, cfg.font_size_normal, "bold"),
+            font=(cfg.font_family, cfg.font_size_instruction, "bold"),
             width=20,
             command=self._on_submit,
             padx=10,
             pady=6,
             **theme.PRIMARY_BUTTON,
         )
-        self._submit_btn.pack(pady=20)
+        self._submit_btn.pack(side="bottom", pady=12)
+
+        self._items_frame = tk.Frame(self, bg=theme.CHROME_BG)
+        self._items_frame.pack(side="top", fill="both", expand=True, padx=60, pady=6)
 
         # Per-entry state.
         self._block_idx: int | None = None
@@ -105,6 +107,7 @@ class RatingsChillsFrame(StageFrame):
                 wraplength=600,
             )
             label.pack(side="top", anchor="w")
+            self.register_wrappable(label, ratio=0.85)
 
             if isinstance(item, RadioItem):
                 var = tk.StringVar(value="")
@@ -121,7 +124,7 @@ class RatingsChillsFrame(StageFrame):
                         value=option,
                         variable=var,
                         indicatoron=False,
-                        font=(cfg.font_family, cfg.font_size_normal),
+                        font=(cfg.font_family, cfg.font_size_instruction, "bold"),
                         fg=theme.TEXT,
                         bg=theme.SURFACE_RAISED,
                         selectcolor=theme.ACCENT,
@@ -129,49 +132,92 @@ class RatingsChillsFrame(StageFrame):
                         activeforeground="#FFFFFF",
                         relief="flat",
                         borderwidth=0,
-                        padx=14,
-                        pady=6,
+                        padx=18,
+                        pady=8,
                         cursor="hand2",
-                    ).pack(side="left", padx=8)
+                    ).pack(side="left", padx=10)
+                value_lbl = tk.Label(
+                    row,
+                    text="Selected: (none yet)",
+                    font=(cfg.font_family, cfg.font_size_normal, "bold"),
+                    fg=theme.ACCENT_LIGHT,
+                    bg=theme.CHROME_BG,
+                )
+                value_lbl.pack(anchor="w", pady=(4, 0))
+                var.trace_add(
+                    "write",
+                    lambda *_a, v=var, l=value_lbl: l.configure(
+                        text=f"Selected: {v.get() or '(none yet)'}"
+                    ),
+                )
 
             elif isinstance(item, SpinnerIntItem):
                 var = tk.IntVar(value=item.default)
                 self._vars[item.id] = var
+                spinner_row = tk.Frame(row, bg=theme.CHROME_BG)
+                spinner_row.pack(anchor="w")
                 tk.Spinbox(
-                    row,
+                    spinner_row,
                     from_=item.min,
                     to=item.max,
                     textvariable=var,
-                    width=6,
-                    font=(cfg.font_family, cfg.font_size_normal),
+                    width=5,
+                    font=(cfg.font_family, cfg.font_size_instruction, "bold"),
+                    justify="center",
                     bg=theme.SURFACE,
                     fg=theme.TEXT,
                     insertbackground=theme.ACCENT_LIGHT,
                     buttonbackground=theme.ACCENT_DARK,
                     relief="flat",
-                ).pack(anchor="w")
+                ).pack(side="left")
+                value_lbl = tk.Label(
+                    spinner_row,
+                    text=f"  Selected: {var.get()}",
+                    font=(cfg.font_family, cfg.font_size_normal, "bold"),
+                    fg=theme.ACCENT_LIGHT,
+                    bg=theme.CHROME_BG,
+                )
+                value_lbl.pack(side="left", padx=12)
+                var.trace_add(
+                    "write",
+                    lambda *_a, v=var, l=value_lbl: l.configure(text=f"  Selected: {v.get()}"),
+                )
 
             elif isinstance(item, SliderItem):
                 var = tk.IntVar(value=item.default)
                 self._vars[item.id] = var
-                anchors_text = ""
-                if item.anchors:
-                    parts = [f"{k}={v}" for k, v in sorted(item.anchors.items())]
-                    anchors_text = "  (" + ", ".join(parts) + ")"
+                value_lbl = tk.Label(
+                    row,
+                    text=f"Selected: {var.get()}",
+                    font=(cfg.font_family, cfg.font_size_instruction, "bold"),
+                    fg=theme.ACCENT_LIGHT,
+                    bg=theme.CHROME_BG,
+                )
+                value_lbl.pack(anchor="w", pady=(2, 0))
                 tk.Scale(
                     row,
                     from_=item.min,
                     to=item.max,
                     orient="horizontal",
                     variable=var,
-                    length=400,
+                    length=500,
                     bg=theme.CHROME_BG,
                     fg=theme.TEXT,
                     highlightthickness=0,
                     troughcolor=theme.SURFACE_RAISED,
                     activebackground=theme.ACCENT_LIGHT,
-                ).pack(anchor="w")
-                if anchors_text:
+                    tickinterval=max(1, (item.max - item.min) // 10),
+                    font=(cfg.font_family, cfg.font_size_normal),
+                    sliderlength=24,
+                    width=22,
+                ).pack(anchor="w", fill="x")
+                var.trace_add(
+                    "write",
+                    lambda *_a, v=var, l=value_lbl: l.configure(text=f"Selected: {v.get()}"),
+                )
+                if item.anchors:
+                    parts = [f"{k}={v}" for k, v in sorted(item.anchors.items())]
+                    anchors_text = "  (" + ", ".join(parts) + ")"
                     tk.Label(
                         row,
                         text=anchors_text.strip(),

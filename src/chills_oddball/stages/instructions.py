@@ -29,7 +29,7 @@ class InstructionsFrame(StageFrame):
                 "pre_session", "Eyes closed. Listen for the gongs. SPACE when ready."
             )
         )
-        tk.Label(
+        body_label = tk.Label(
             self,
             textvariable=self.body_var,
             font=(cfg.font_family, cfg.font_size_instruction),
@@ -37,7 +37,9 @@ class InstructionsFrame(StageFrame):
             bg=theme.CHROME_BG,
             wraplength=900,
             justify="left",
-        ).pack(pady=20, padx=80)
+        )
+        body_label.pack(pady=20, padx=80)
+        self.register_wrappable(body_label, ratio=0.85)
 
         tk.Label(
             self,

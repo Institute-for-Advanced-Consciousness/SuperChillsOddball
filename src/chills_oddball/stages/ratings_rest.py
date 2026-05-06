@@ -26,22 +26,22 @@ class RatingsRestFrame(StageFrame):
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
             fg=theme.ACCENT_LIGHT,
             bg=theme.CHROME_BG,
-        ).pack(pady=(60, 20))
-
-        self._items_frame = tk.Frame(self, bg=theme.CHROME_BG)
-        self._items_frame.pack(fill="both", expand=True, padx=80, pady=20)
+        ).pack(side="top", pady=(30, 12))
 
         self._submit_btn = tk.Button(
             self,
             text="Submit",
-            font=(cfg.font_family, cfg.font_size_normal, "bold"),
+            font=(cfg.font_family, cfg.font_size_instruction, "bold"),
             width=20,
             command=self._on_submit,
             padx=10,
             pady=6,
             **theme.PRIMARY_BUTTON,
         )
-        self._submit_btn.pack(pady=20)
+        self._submit_btn.pack(side="bottom", pady=14)
+
+        self._items_frame = tk.Frame(self, bg=theme.CHROME_BG)
+        self._items_frame.pack(side="top", fill="both", expand=True, padx=60, pady=10)
 
         self._block_idx: int | None = None
         self._vars: dict[str, Any] = {}
@@ -76,30 +76,48 @@ class RatingsRestFrame(StageFrame):
             row.pack(fill="x", pady=10)
             self._item_widgets.append(row)
 
-            tk.Label(
+            label = tk.Label(
                 row,
                 text=item.label,
                 font=(cfg.font_family, cfg.font_size_instruction),
                 fg=theme.TEXT,
                 bg=theme.CHROME_BG,
-            ).pack(anchor="w")
+            )
+            label.pack(anchor="w")
+            self.register_wrappable(label, ratio=0.85)
 
             if isinstance(item, SliderItem):
                 var = tk.IntVar(value=item.default)
                 self._vars[item.id] = var
+                value_lbl = tk.Label(
+                    row,
+                    text=f"Selected: {var.get()}",
+                    font=(cfg.font_family, cfg.font_size_instruction, "bold"),
+                    fg=theme.ACCENT_LIGHT,
+                    bg=theme.CHROME_BG,
+                )
+                value_lbl.pack(anchor="w", pady=(4, 2))
                 tk.Scale(
                     row,
                     from_=item.min,
                     to=item.max,
                     orient="horizontal",
                     variable=var,
-                    length=500,
+                    length=600,
                     bg=theme.CHROME_BG,
                     fg=theme.TEXT,
                     highlightthickness=0,
                     troughcolor=theme.SURFACE_RAISED,
                     activebackground=theme.ACCENT_LIGHT,
-                ).pack(anchor="w", pady=8)
+                    tickinterval=max(1, (item.max - item.min) // 10),
+                    font=(cfg.font_family, cfg.font_size_normal),
+                    sliderlength=26,
+                    width=24,
+                ).pack(anchor="w", pady=8, fill="x")
+                var.trace_add(
+                    "write",
+                    lambda *_a, v=var, l=value_lbl: l.configure(text=f"Selected: {v.get()}"),
+                )
                 if item.anchors:
                     parts = [f"{k} = {v}" for k, v in sorted(item.anchors.items())]
                     tk.Label(

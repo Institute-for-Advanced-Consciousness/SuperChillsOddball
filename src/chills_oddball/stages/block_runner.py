@@ -93,6 +93,7 @@ class BlockRunnerFrame(StageFrame):
             justify="center",
         )
         self._body_label.pack(pady=20)
+        self.register_wrappable(self._body_label, ratio=0.85)
 
         self._status_label = tk.Label(
             self,

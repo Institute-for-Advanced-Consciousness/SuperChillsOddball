@@ -186,6 +186,7 @@ class ActiveOddballFrame(StageFrame):
             justify="center",
         )
         self._body_label.pack(pady=10)
+        self.register_wrappable(self._body_label, ratio=0.85)
 
         self._status_label = tk.Label(
             self,
@@ -585,26 +586,46 @@ class ActiveOddballFrame(StageFrame):
         self._engagement_widgets.clear()
 
         self._engagement_var = tk.IntVar(value=5)
+        value_lbl = tk.Label(
+            self._engagement_frame,
+            text=f"Selected: {self._engagement_var.get()}",
+            font=(cfg.font_family, cfg.font_size_instruction, "bold"),
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
+        )
+        value_lbl.pack(pady=(0, 4))
+        self._engagement_widgets.append(value_lbl)
+
         scale = tk.Scale(
             self._engagement_frame,
             from_=0,
             to=10,
             orient="horizontal",
             variable=self._engagement_var,
-            length=500,
+            length=600,
             bg=theme.CHROME_BG,
             fg=theme.TEXT,
             highlightthickness=0,
             troughcolor=theme.SURFACE_RAISED,
             activebackground=theme.ACCENT_LIGHT,
+            tickinterval=1,
+            font=(cfg.font_family, cfg.font_size_normal),
+            sliderlength=26,
+            width=24,
         )
         scale.pack(pady=8)
         self._engagement_widgets.append(scale)
+        self._engagement_var.trace_add(
+            "write",
+            lambda *_a, v=self._engagement_var, l=value_lbl: l.configure(
+                text=f"Selected: {v.get()}"
+            ),
+        )
 
         anchor = tk.Label(
             self._engagement_frame,
             text="0 = not engaged    10 = fully engaged",
-            font=(cfg.font_family, cfg.font_size_normal - 2, "italic"),
+            font=(cfg.font_family, cfg.font_size_normal, "italic"),
             fg=theme.TEXT_MUTED,
             bg=theme.CHROME_BG,
         )
