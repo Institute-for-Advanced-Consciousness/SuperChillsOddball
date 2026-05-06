@@ -1,0 +1,314 @@
+# =============================================================================
+# IACS On-Demand Chills × Oddball Study — Session Defaults
+# =============================================================================
+#
+# This is the master config for a session. Every tunable parameter lives here.
+# Values shipped in the repo reproduce the protocol-as-designed; the GUI will
+# load this file at session start, render it as a per-section table for the RA
+# to review/edit, and pass an in-memory copy to the runtime. Edits made in the
+# GUI for a single session do NOT overwrite this file — they are session-only.
+#
+# Hard-coded paradigm parameters (tone frequencies, ratios, ERP CORE compliance)
+# are NOT here by design — they live in the task scripts. See CLAUDE.md
+# "Configurable vs. fixed parameters" for the rationale.
+#
+# Anchors / reference values:
+#   - Tone params follow ERP CORE (Kappenman et al., 2021, NeuroImage)
+#   - Oddball sequence constraints follow Näätänen et al. 2007 conventions
+#   - Practice gate matches IACS Sentiometer Study P013
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# Session metadata + paths
+# -----------------------------------------------------------------------------
+session:
+  protocol_id: "P-CHILLS-ODDBALL-01"
+  protocol_label: "On-Demand Chills × Oddball"
+  data_root_dir: "./Data"           # Per-participant folders created under here
+  participant_id_prefix: "P"        # Auto-suggest P001, P002, ...
+  participant_id_zfill: 3           # P001 not P1
+  allow_debug_shortcuts: false      # Ctrl+Shift+S "skip to block N" — keep false in production
+
+
+# -----------------------------------------------------------------------------
+# LSL outlet
+# -----------------------------------------------------------------------------
+lsl:
+  stream_name: "Chills_Task_Markers"
+  stream_type: "Markers"
+  channel_format: "string"
+  source_id: "CHILLS_ODDBALL_Launcher"   # MUST be constant across the session
+                                         # (LabRecorder loses subscription if it changes mid-session;
+                                         # see sentiometer commit 8094ab4)
+
+
+# -----------------------------------------------------------------------------
+# Audio
+# -----------------------------------------------------------------------------
+audio:
+  device_name: null                 # null = system default; set to a string substring to pin a device
+  sample_rate_hz: 44100
+  channels: 2                       # Stereo headphones; tones rendered identically L/R
+  buffer_blocksize: 256             # sounddevice callback block size (samples)
+  tone_volume_dbfs: -20.0           # Both standard and deviant tones, calibrated against volume_check
+  gong_volume_dbfs: -18.0
+  ref_tone_volume_dbfs: -20.0       # The 1 kHz volume-check reference (matches tone level)
+
+  files:                            # Paths relative to repo root
+    tone_standard: "assets/sounds/tone_standard_1000hz.wav"
+    tone_deviant: "assets/sounds/tone_deviant_2000hz.wav"
+    gong_start: "assets/sounds/gong_start.wav"
+    gong_end: "assets/sounds/gong_end.wav"
+    volume_reference: "assets/sounds/volume_reference_1khz.wav"
+
+
+# -----------------------------------------------------------------------------
+# Schedule generator
+# -----------------------------------------------------------------------------
+schedule:
+  conditions:
+    - "chills_only"
+    - "rest_only"
+    - "chills_oddball_passive"
+    - "rest_oddball_passive"
+
+  n_blocks_per_condition: 4         # Total 16 short-condition blocks
+  block_duration_set_s: [30, 90, 150, 180]  # Each condition gets exactly one of each
+  no_back_to_back_same_condition: true
+  max_shuffle_attempts: 1000        # Fail loudly if constraints unsatisfiable
+
+  seed_strategy: "random_per_session"   # Options: "random_per_session" | "participant_id" | "fixed"
+  fixed_seed: null                  # Only used if seed_strategy == "fixed"
+
+
+# -----------------------------------------------------------------------------
+# Calibration block (always first, before the 16 main blocks)
+# -----------------------------------------------------------------------------
+calibration:
+  enabled: true
+  duration_s: 30
+  condition: "chills_only"          # Calibration is always a chills block
+  ratings_panel: "chills"           # Uses the full chills rating battery
+
+
+# -----------------------------------------------------------------------------
+# Oddball stimulus sequence (used in passive AND active blocks)
+# -----------------------------------------------------------------------------
+# These constraints define a "valid" oddball sequence. The generator runs
+# rejection sampling: shuffle, validate, retry up to max_shuffle_attempts.
+# At 80/20 ratio with these constraints, satisfaction rate is >99% on attempt 1.
+oddball:
+  deviant_probability: 0.20         # 80% standard / 20% deviant — ERP CORE
+  isi_min_ms: 1100                  # ERP CORE
+  isi_max_ms: 1500                  # ERP CORE
+  isi_distribution: "uniform"       # uniform | normal (uniform matches ERP CORE)
+  response_window_ms: 1500          # Active block only; passive ignores this
+
+  # Sequence constraints (apply to BOTH passive and active blocks)
+  min_standards_before_first_deviant: 3   # No deviant in trials 1–3 of any block
+  min_standards_between_deviants: 3       # ≥3 standards between any two deviants
+  max_consecutive_standards: 8            # Prevent inattentive habituation
+
+
+# -----------------------------------------------------------------------------
+# Active oddball (final block, ~5 min, button-press task)
+# -----------------------------------------------------------------------------
+active_oddball:
+  total_trials: 250                 # ~200 standard + ~50 deviant — matches sentiometer P013
+  duration_target_s: 300            # ~5 min (computed from trials × mean ISI; this is informational)
+  response_key: "space"             # Spacebar for hits
+  abort_key: "escape"               # NOT spacebar — collision avoidance
+
+  practice:
+    n_trials: 10                    # 8 standard + 2 deviant
+    n_deviants: 2
+    hit_threshold: 0.75             # ≥75% hit rate to pass
+    fa_ceiling: 0.50                # ≤50% false-alarm rate to pass
+    max_attempts: null              # null = unlimited (matches sentiometer; keep retrying)
+                                    # set to an integer to cap
+
+  engagement_rating:
+    enabled: true                   # Single 0–10 slider after the active block
+
+
+# -----------------------------------------------------------------------------
+# Ratings panels
+# -----------------------------------------------------------------------------
+ratings:
+
+  # Shown after every chills block (chills_only, chills_oddball_passive, calibration)
+  chills:
+    items:
+      - id: "success"
+        label: "Was the chills induction a success?"
+        type: "radio"
+        options: ["Yes", "No"]
+        required: true
+
+      - id: "waves"
+        label: "How many waves of chills did you experience?"
+        type: "spinner_int"
+        min: 0
+        max: 20
+        default: 0
+        required: true
+
+      - id: "intensity"
+        label: "Overall intensity"
+        type: "slider"
+        min: 0
+        max: 10
+        default: 5
+        anchors:
+          0: "none"
+          10: "maximum I have ever felt"
+        required: true
+
+      - id: "quality"
+        label: "Quality"
+        type: "slider"
+        min: 0
+        max: 10
+        default: 5
+        anchors:
+          0: "poor / unpleasant"
+          10: "excellent / pleasant"
+        required: true
+
+      - id: "keep"
+        label: "Should we keep this trial in the analysis?"
+        type: "radio"
+        options: ["Yes, keep", "No, discard"]
+        required: true
+
+      - id: "notes"
+        label: "Notes (optional)"
+        type: "textbox"
+        rows: 3
+        required: false
+
+  # Shown after every rest block (rest_only, rest_oddball_passive)
+  rest:
+    items:
+      - id: "alertness"
+        label: "Alertness"
+        type: "slider"
+        min: 0
+        max: 10
+        default: 5
+        anchors:
+          0: "fell asleep"
+          5: "neutral"
+          10: "highly alert / wired"
+        required: true
+
+
+# -----------------------------------------------------------------------------
+# Pre-block instruction screens
+# -----------------------------------------------------------------------------
+# These strings are shown to the participant before each block starts.
+# Edit freely; they're not load-bearing for any analysis.
+instructions:
+  intake_welcome: |
+    Welcome. Please put on the headphones and let the experimenter know when ready.
+
+  volume_check: |
+    A 1 kHz tone will play at the volume used during the experiment.
+    Adjust your headphone volume until it is comfortable but clearly audible.
+    Press SPACE when ready.
+
+  pre_session: |
+    During this session you will hear a deep gong sound to start each block,
+    and a different gong sound to end each block. Keep your eyes closed
+    throughout every block.
+
+    Some blocks will be silent — you'll be asked to either rest or to
+    self-induce chills. Other blocks will play a stream of tones that you
+    should ignore. After each block you will rate your experience.
+
+    The final block is different: you'll respond to specific tones with the
+    spacebar. Instructions for that will appear when we get there.
+
+    Press SPACE when ready to begin.
+
+  calibration_chills: |
+    First, a 30-second baseline chills block.
+    When you hear the start gong, close your eyes and self-induce chills.
+    The end gong will tell you when to open your eyes for ratings.
+
+    Press SPACE when ready.
+
+  pre_block_chills_only: |
+    Up next: CHILLS (silent).
+    Eyes closed. Self-induce chills when you hear the start gong.
+    Press SPACE when ready.
+
+  pre_block_rest_only: |
+    Up next: REST (silent).
+    Eyes closed. Just rest and let your mind wander.
+    Press SPACE when ready.
+
+  pre_block_chills_oddball_passive: |
+    Up next: CHILLS with tones.
+    Eyes closed. Self-induce chills. You'll hear a stream of tones —
+    please ignore them, do not respond.
+    Press SPACE when ready.
+
+  pre_block_rest_oddball_passive: |
+    Up next: REST with tones.
+    Eyes closed. Just rest. You'll hear a stream of tones —
+    please ignore them, do not respond.
+    Press SPACE when ready.
+
+  active_oddball_intro: |
+    Final block: ACTIVE LISTENING.
+    Eyes closed. You'll hear a stream of low tones with occasional high tones.
+    Press the SPACEBAR every time you hear a HIGH tone.
+    Do not respond to the low tones.
+
+    First we'll do a short practice. Press SPACE when ready.
+
+  active_practice_pass: |
+    Great — you've got it. Press SPACE to start the main block.
+
+  active_practice_fail: |
+    Let's try the practice again. Remember: press SPACE only on the HIGH tones.
+    Press SPACE when ready.
+
+  completion: |
+    Session complete. Thank you for participating!
+
+
+# -----------------------------------------------------------------------------
+# Display
+# -----------------------------------------------------------------------------
+display:
+  fullscreen: true
+  background_color: "#000000"       # Black background during all blocks
+  fixation_color: "#FFFFFF"         # White fixation cross (visible only when eyes are open)
+  text_color: "#FFFFFF"
+  font_family: "Arial"
+  font_size_normal: 18
+  font_size_instruction: 24
+  font_size_heading: 32
+  ra_footer_visible: true           # Small RA-only status bar at bottom of screen
+
+
+# -----------------------------------------------------------------------------
+# Abort / recovery
+# -----------------------------------------------------------------------------
+abort:
+  require_confirmation: true        # Escape opens "Are you sure?" dialog
+  partial_save_filename: "PARTIAL_session.json"
+  emit_session_abort_marker: true
+
+
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
+logging:
+  level: "INFO"                     # DEBUG | INFO | WARNING | ERROR
+  log_to_file: true
+  log_filename: "app.log"           # Written into the participant's data folder
+  console_output: true
