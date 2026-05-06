@@ -5,6 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from typing import Any
 
+from .. import theme
 from ._base import StageFrame
 
 
@@ -13,14 +14,14 @@ class InstructionsFrame(StageFrame):
 
     def build(self) -> None:
         cfg = self.app.config.display
-        self.configure(bg=cfg.background_color)
+        self.configure(bg=theme.CHROME_BG)
 
         tk.Label(
             self,
             text="Instructions",
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
         ).pack(pady=(60, 20))
 
         self.body_var = tk.StringVar(
@@ -32,8 +33,8 @@ class InstructionsFrame(StageFrame):
             self,
             textvariable=self.body_var,
             font=(cfg.font_family, cfg.font_size_instruction),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
             wraplength=900,
             justify="left",
         ).pack(pady=20, padx=80)
@@ -42,8 +43,8 @@ class InstructionsFrame(StageFrame):
             self,
             text="Press SPACE when ready to begin.",
             font=(cfg.font_family, cfg.font_size_normal, "italic"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT_MUTED,
+            bg=theme.CHROME_BG,
         ).pack(pady=20)
 
         self._space_binding: str | None = None

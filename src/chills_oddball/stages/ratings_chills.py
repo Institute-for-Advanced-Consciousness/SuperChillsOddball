@@ -12,6 +12,7 @@ import logging
 import tkinter as tk
 from typing import Any
 
+from .. import theme
 from ..config import RadioItem, SliderItem, SpinnerIntItem, TextboxItem
 from ._base import StageFrame
 
@@ -23,25 +24,28 @@ class RatingsChillsFrame(StageFrame):
 
     def build(self) -> None:
         cfg = self.app.config.display
-        self.configure(bg=cfg.background_color)
+        self.configure(bg=theme.CHROME_BG)
 
         tk.Label(
             self,
             text="Ratings",
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
         ).pack(pady=(40, 10))
 
-        self._items_frame = tk.Frame(self, bg=cfg.background_color)
+        self._items_frame = tk.Frame(self, bg=theme.CHROME_BG)
         self._items_frame.pack(fill="both", expand=True, padx=80, pady=10)
 
         self._submit_btn = tk.Button(
             self,
             text="Submit",
-            font=(cfg.font_family, cfg.font_size_normal),
+            font=(cfg.font_family, cfg.font_size_normal, "bold"),
             width=20,
             command=self._on_submit,
+            padx=10,
+            pady=6,
+            **theme.PRIMARY_BUTTON,
         )
         self._submit_btn.pack(pady=20)
 
@@ -87,7 +91,7 @@ class RatingsChillsFrame(StageFrame):
     def _build_items(self) -> None:
         cfg = self.app.config.display
         for item in self.app.config.ratings.chills.items:
-            row = tk.Frame(self._items_frame, bg=cfg.background_color)
+            row = tk.Frame(self._items_frame, bg=theme.CHROME_BG)
             row.pack(fill="x", pady=8)
             self._item_widgets.append(row)
 
@@ -95,8 +99,8 @@ class RatingsChillsFrame(StageFrame):
                 row,
                 text=item.label,
                 font=(cfg.font_family, cfg.font_size_normal),
-                fg=cfg.text_color,
-                bg=cfg.background_color,
+                fg=theme.TEXT,
+                bg=theme.CHROME_BG,
                 anchor="w",
                 wraplength=600,
             )
@@ -105,13 +109,11 @@ class RatingsChillsFrame(StageFrame):
             if isinstance(item, RadioItem):
                 var = tk.StringVar(value="")
                 self._vars[item.id] = var
-                btn_frame = tk.Frame(row, bg=cfg.background_color)
+                btn_frame = tk.Frame(row, bg=theme.CHROME_BG)
                 btn_frame.pack(anchor="w")
-                # `indicatoron=False` renders each option as a button. The
-                # selected one shows pressed/highlighted; the rest show
-                # normal — unambiguous on a dark background. Avoids the
-                # "selectcolor=black on bg=black makes the selected dot
-                # invisible" trap of the indicator style.
+                # `indicatoron=False` renders each option as a button so the
+                # selected/unselected state is unambiguous on dark backgrounds.
+                # Selected fills with the IACS purple accent.
                 for option in item.options:
                     tk.Radiobutton(
                         btn_frame,
@@ -120,15 +122,16 @@ class RatingsChillsFrame(StageFrame):
                         variable=var,
                         indicatoron=False,
                         font=(cfg.font_family, cfg.font_size_normal),
-                        fg=cfg.text_color,
-                        bg="#222222",
-                        selectcolor="#3478f6",  # bright blue when selected
-                        activebackground="#333333",
-                        activeforeground=cfg.text_color,
-                        relief="raised",
-                        borderwidth=2,
-                        padx=12,
-                        pady=4,
+                        fg=theme.TEXT,
+                        bg=theme.SURFACE_RAISED,
+                        selectcolor=theme.ACCENT,
+                        activebackground=theme.ACCENT_DARK,
+                        activeforeground="#FFFFFF",
+                        relief="flat",
+                        borderwidth=0,
+                        padx=14,
+                        pady=6,
+                        cursor="hand2",
                     ).pack(side="left", padx=8)
 
             elif isinstance(item, SpinnerIntItem):
@@ -141,6 +144,11 @@ class RatingsChillsFrame(StageFrame):
                     textvariable=var,
                     width=6,
                     font=(cfg.font_family, cfg.font_size_normal),
+                    bg=theme.SURFACE,
+                    fg=theme.TEXT,
+                    insertbackground=theme.ACCENT_LIGHT,
+                    buttonbackground=theme.ACCENT_DARK,
+                    relief="flat",
                 ).pack(anchor="w")
 
             elif isinstance(item, SliderItem):
@@ -157,18 +165,19 @@ class RatingsChillsFrame(StageFrame):
                     orient="horizontal",
                     variable=var,
                     length=400,
-                    bg=cfg.background_color,
-                    fg=cfg.text_color,
+                    bg=theme.CHROME_BG,
+                    fg=theme.TEXT,
                     highlightthickness=0,
-                    troughcolor="#444444",
+                    troughcolor=theme.SURFACE_RAISED,
+                    activebackground=theme.ACCENT_LIGHT,
                 ).pack(anchor="w")
                 if anchors_text:
                     tk.Label(
                         row,
                         text=anchors_text.strip(),
                         font=(cfg.font_family, cfg.font_size_normal - 2, "italic"),
-                        fg=cfg.text_color,
-                        bg=cfg.background_color,
+                        fg=theme.TEXT_MUTED,
+                        bg=theme.CHROME_BG,
                     ).pack(anchor="w")
 
             elif isinstance(item, TextboxItem):
@@ -177,6 +186,12 @@ class RatingsChillsFrame(StageFrame):
                     height=item.rows,
                     width=80,
                     font=(cfg.font_family, cfg.font_size_normal),
+                    bg=theme.SURFACE,
+                    fg=theme.TEXT,
+                    insertbackground=theme.ACCENT_LIGHT,
+                    relief="flat",
+                    highlightthickness=1,
+                    highlightbackground=theme.DIVIDER,
                 )
                 text.pack(anchor="w")
                 self._text_widgets[item.id] = text

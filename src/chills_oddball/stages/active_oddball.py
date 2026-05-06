@@ -28,6 +28,7 @@ import tkinter as tk
 from dataclasses import dataclass
 from typing import Any
 
+from .. import theme
 from ..audio import TrialRecord
 from ..persistence import TrialRow
 from ..schedule import ScheduledBlock, generate_oddball_sequence
@@ -157,7 +158,8 @@ class ActiveOddballFrame(StageFrame):
 
     def build(self) -> None:
         cfg = self.app.config.display
-        self.configure(bg=cfg.background_color)
+        # Default to chrome; _start_main flips to task mode for the responding block.
+        self.configure(bg=theme.CHROME_BG)
 
         self.title_var = tk.StringVar(value="Active oddball")
         self.body_var = tk.StringVar(value="")
@@ -165,53 +167,59 @@ class ActiveOddballFrame(StageFrame):
         self.summary_var = tk.StringVar(value="")
         self.footer_var = tk.StringVar(value="")
 
-        tk.Label(
+        self._title_label = tk.Label(
             self,
             textvariable=self.title_var,
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
-        ).pack(pady=(40, 10))
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
+        )
+        self._title_label.pack(pady=(40, 10))
 
-        tk.Label(
+        self._body_label = tk.Label(
             self,
             textvariable=self.body_var,
             font=(cfg.font_family, cfg.font_size_instruction),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
             wraplength=900,
             justify="center",
-        ).pack(pady=10)
+        )
+        self._body_label.pack(pady=10)
 
-        tk.Label(
+        self._status_label = tk.Label(
             self,
             textvariable=self.status_var,
             font=(cfg.font_family, cfg.font_size_normal, "italic"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
-        ).pack(pady=10)
+            fg=theme.TEXT_MUTED,
+            bg=theme.CHROME_BG,
+        )
+        self._status_label.pack(pady=10)
 
         # Engagement slider container (built lazily in _show_engagement).
-        self._engagement_frame = tk.Frame(self, bg=cfg.background_color)
+        self._engagement_frame = tk.Frame(self, bg=theme.CHROME_BG)
         self._engagement_frame.pack(pady=10)
 
-        tk.Label(
+        self._summary_label = tk.Label(
             self,
             textvariable=self.summary_var,
             font=(cfg.font_family, cfg.font_size_normal),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
             justify="left",
-        ).pack(pady=20)
+        )
+        self._summary_label.pack(pady=20)
 
+        self._footer_label: tk.Label | None = None
         if cfg.ra_footer_visible:
-            tk.Label(
+            self._footer_label = tk.Label(
                 self,
                 textvariable=self.footer_var,
                 font=(cfg.font_family, cfg.font_size_normal),
-                fg="#888888",
-                bg=cfg.background_color,
-            ).pack(side="bottom", pady=10)
+                fg=theme.TEXT_MUTED,
+                bg=theme.CHROME_BG,
+            )
+            self._footer_label.pack(side="bottom", pady=10)
 
         # Per-entry state.
         self._block: ScheduledBlock | None = None
@@ -239,7 +247,31 @@ class ActiveOddballFrame(StageFrame):
         self._practice_attempt = 0
         self._main_records = None
         self._main_outcome = None
+        self._apply_chrome_theme()
         self._show_intro()
+
+    def _apply_task_theme(self) -> None:
+        """Switch frame + child widgets to pure black/white task mode."""
+        self.configure(bg=theme.TASK_BG)
+        for w in (self._title_label, self._body_label, self._status_label,
+                  self._summary_label, self._engagement_frame):
+            w.configure(bg=theme.TASK_BG)
+        for w in (self._title_label, self._body_label, self._status_label,
+                  self._summary_label):
+            w.configure(fg=theme.TASK_TEXT)
+        if self._footer_label is not None:
+            self._footer_label.configure(bg=theme.TASK_BG, fg="#444444")
+
+    def _apply_chrome_theme(self) -> None:
+        """Restore the IACS chrome theme (used outside the main responding block)."""
+        self.configure(bg=theme.CHROME_BG)
+        self._engagement_frame.configure(bg=theme.CHROME_BG)
+        self._title_label.configure(bg=theme.CHROME_BG, fg=theme.ACCENT_LIGHT)
+        self._body_label.configure(bg=theme.CHROME_BG, fg=theme.TEXT)
+        self._status_label.configure(bg=theme.CHROME_BG, fg=theme.TEXT_MUTED)
+        self._summary_label.configure(bg=theme.CHROME_BG, fg=theme.TEXT)
+        if self._footer_label is not None:
+            self._footer_label.configure(bg=theme.CHROME_BG, fg=theme.TEXT_MUTED)
 
     def on_leave(self) -> None:
         self._unbind_all()
@@ -402,6 +434,9 @@ class ActiveOddballFrame(StageFrame):
         assert block is not None
         self._phase = PHASE_MAIN
         self._press_log = []
+        # Active-main is the responding phase — flip to pure black/white
+        # task mode so the chrome doesn't distract from listening.
+        self._apply_task_theme()
         # Eyes-closed view tailored for the active block (still need the
         # spacebar reminder since this is the responding phase).
         self.title_var.set("")
@@ -538,6 +573,8 @@ class ActiveOddballFrame(StageFrame):
         self._phase = PHASE_ENGAGEMENT
         self._unbind_all()
         cfg = self.app.config.display
+        # Returning from task-mode main block; restore the chrome.
+        self._apply_chrome_theme()
         self.title_var.set("Active oddball complete")
         self.body_var.set("How engaged did you feel during that block?")
         self.status_var.set("Move the slider, then click Submit.")
@@ -555,10 +592,11 @@ class ActiveOddballFrame(StageFrame):
             orient="horizontal",
             variable=self._engagement_var,
             length=500,
-            bg=cfg.background_color,
-            fg=cfg.text_color,
+            bg=theme.CHROME_BG,
+            fg=theme.TEXT,
             highlightthickness=0,
-            troughcolor="#444444",
+            troughcolor=theme.SURFACE_RAISED,
+            activebackground=theme.ACCENT_LIGHT,
         )
         scale.pack(pady=8)
         self._engagement_widgets.append(scale)
@@ -567,8 +605,8 @@ class ActiveOddballFrame(StageFrame):
             self._engagement_frame,
             text="0 = not engaged    10 = fully engaged",
             font=(cfg.font_family, cfg.font_size_normal - 2, "italic"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT_MUTED,
+            bg=theme.CHROME_BG,
         )
         anchor.pack()
         self._engagement_widgets.append(anchor)
@@ -576,9 +614,12 @@ class ActiveOddballFrame(StageFrame):
         submit = tk.Button(
             self._engagement_frame,
             text="Submit",
-            font=(cfg.font_family, cfg.font_size_normal),
+            font=(cfg.font_family, cfg.font_size_normal, "bold"),
             width=20,
             command=self._on_engagement_submit,
+            padx=10,
+            pady=6,
+            **theme.PRIMARY_BUTTON,
         )
         submit.pack(pady=15)
         self._engagement_widgets.append(submit)

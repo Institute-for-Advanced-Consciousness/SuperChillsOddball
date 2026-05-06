@@ -18,6 +18,7 @@ import logging
 import tkinter as tk
 from typing import Any
 
+from .. import theme
 from ._base import StageFrame
 
 logger = logging.getLogger(__name__)
@@ -28,14 +29,14 @@ class CompletionFrame(StageFrame):
 
     def build(self) -> None:
         cfg = self.app.config.display
-        self.configure(bg=cfg.background_color)
+        self.configure(bg=theme.CHROME_BG)
 
         tk.Label(
             self,
             text="Session complete",
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
         ).pack(pady=(60, 20))
 
         self.body_var = tk.StringVar(
@@ -47,8 +48,8 @@ class CompletionFrame(StageFrame):
             self,
             textvariable=self.body_var,
             font=(cfg.font_family, cfg.font_size_instruction),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
         ).pack(pady=20)
 
         self.summary_var = tk.StringVar(value="")
@@ -56,8 +57,8 @@ class CompletionFrame(StageFrame):
             self,
             textvariable=self.summary_var,
             font=(cfg.font_family, cfg.font_size_normal),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
             justify="left",
             wraplength=800,
         ).pack(pady=20)
@@ -68,6 +69,9 @@ class CompletionFrame(StageFrame):
             font=(cfg.font_family, cfg.font_size_instruction, "bold"),
             width=24,
             command=self._on_save_and_exit,
+            padx=12,
+            pady=8,
+            **theme.PRIMARY_BUTTON,
         ).pack(pady=30)
 
     def on_enter(self, **_: Any) -> None:

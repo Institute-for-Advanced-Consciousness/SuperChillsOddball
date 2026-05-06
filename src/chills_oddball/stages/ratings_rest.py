@@ -6,6 +6,7 @@ import logging
 import tkinter as tk
 from typing import Any
 
+from .. import theme
 from ..config import SliderItem
 from ._base import StageFrame
 
@@ -17,25 +18,28 @@ class RatingsRestFrame(StageFrame):
 
     def build(self) -> None:
         cfg = self.app.config.display
-        self.configure(bg=cfg.background_color)
+        self.configure(bg=theme.CHROME_BG)
 
         tk.Label(
             self,
             text="Alertness",
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
         ).pack(pady=(60, 20))
 
-        self._items_frame = tk.Frame(self, bg=cfg.background_color)
+        self._items_frame = tk.Frame(self, bg=theme.CHROME_BG)
         self._items_frame.pack(fill="both", expand=True, padx=80, pady=20)
 
         self._submit_btn = tk.Button(
             self,
             text="Submit",
-            font=(cfg.font_family, cfg.font_size_normal),
+            font=(cfg.font_family, cfg.font_size_normal, "bold"),
             width=20,
             command=self._on_submit,
+            padx=10,
+            pady=6,
+            **theme.PRIMARY_BUTTON,
         )
         self._submit_btn.pack(pady=20)
 
@@ -68,7 +72,7 @@ class RatingsRestFrame(StageFrame):
     def _build_items(self) -> None:
         cfg = self.app.config.display
         for item in self.app.config.ratings.rest.items:
-            row = tk.Frame(self._items_frame, bg=cfg.background_color)
+            row = tk.Frame(self._items_frame, bg=theme.CHROME_BG)
             row.pack(fill="x", pady=10)
             self._item_widgets.append(row)
 
@@ -76,8 +80,8 @@ class RatingsRestFrame(StageFrame):
                 row,
                 text=item.label,
                 font=(cfg.font_family, cfg.font_size_instruction),
-                fg=cfg.text_color,
-                bg=cfg.background_color,
+                fg=theme.TEXT,
+                bg=theme.CHROME_BG,
             ).pack(anchor="w")
 
             if isinstance(item, SliderItem):
@@ -90,10 +94,11 @@ class RatingsRestFrame(StageFrame):
                     orient="horizontal",
                     variable=var,
                     length=500,
-                    bg=cfg.background_color,
-                    fg=cfg.text_color,
+                    bg=theme.CHROME_BG,
+                    fg=theme.TEXT,
                     highlightthickness=0,
-                    troughcolor="#444444",
+                    troughcolor=theme.SURFACE_RAISED,
+                    activebackground=theme.ACCENT_LIGHT,
                 ).pack(anchor="w", pady=8)
                 if item.anchors:
                     parts = [f"{k} = {v}" for k, v in sorted(item.anchors.items())]
@@ -101,8 +106,8 @@ class RatingsRestFrame(StageFrame):
                         row,
                         text="  |  ".join(parts),
                         font=(cfg.font_family, cfg.font_size_normal - 2, "italic"),
-                        fg=cfg.text_color,
-                        bg=cfg.background_color,
+                        fg=theme.TEXT_MUTED,
+                        bg=theme.CHROME_BG,
                     ).pack(anchor="w")
 
     def _collect_values(self) -> dict[str, Any]:

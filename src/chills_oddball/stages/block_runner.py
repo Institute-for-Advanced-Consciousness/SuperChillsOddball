@@ -32,6 +32,7 @@ import threading
 import tkinter as tk
 from typing import Any
 
+from .. import theme
 from ..audio import play_gong
 from ..persistence import TrialRow
 from ..schedule import ScheduledBlock, generate_oddball_sequence
@@ -64,47 +65,54 @@ class BlockRunnerFrame(StageFrame):
 
     def build(self) -> None:
         cfg = self.app.config.display
-        self.configure(bg=cfg.background_color)
+        # Default to chrome (pre-block instructions); _show_eyes_closed_view
+        # swaps to task mode (pure black/white) for the in-block screen.
+        self.configure(bg=theme.CHROME_BG)
 
         self.title_var = tk.StringVar(value="Block")
         self.body_var = tk.StringVar(value="")
         self.status_var = tk.StringVar(value="")
         self.footer_var = tk.StringVar(value="")
 
-        tk.Label(
+        self._title_label = tk.Label(
             self,
             textvariable=self.title_var,
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
-        ).pack(pady=(60, 20))
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
+        )
+        self._title_label.pack(pady=(60, 20))
 
-        tk.Label(
+        self._body_label = tk.Label(
             self,
             textvariable=self.body_var,
             font=(cfg.font_family, cfg.font_size_instruction),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
             wraplength=900,
             justify="center",
-        ).pack(pady=20)
+        )
+        self._body_label.pack(pady=20)
 
-        tk.Label(
+        self._status_label = tk.Label(
             self,
             textvariable=self.status_var,
             font=(cfg.font_family, cfg.font_size_normal, "italic"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
-        ).pack(pady=20)
+            fg=theme.TEXT_MUTED,
+            bg=theme.CHROME_BG,
+        )
+        self._status_label.pack(pady=20)
 
+        self._footer_label: tk.Label | None = None
         if cfg.ra_footer_visible:
-            tk.Label(
+            self._footer_label = tk.Label(
                 self,
                 textvariable=self.footer_var,
                 font=(cfg.font_family, cfg.font_size_normal),
-                fg="#888888",
-                bg=cfg.background_color,
-            ).pack(side="bottom", pady=10)
+                fg=theme.TEXT_MUTED,
+                bg=theme.CHROME_BG,
+            )
+            self._footer_label.pack(side="bottom", pady=10)
 
         # Per-entry state.
         self._block: ScheduledBlock | None = None
@@ -125,6 +133,10 @@ class BlockRunnerFrame(StageFrame):
         self._block = block
         self._trials = None
         self._record = None
+
+        # Restore chrome (we may be re-entering after a previous block left
+        # the frame in task-mode pure black/white).
+        self._apply_chrome_theme()
 
         condition = block.condition
         instructions_key = f"pre_block_{condition}"
@@ -167,14 +179,34 @@ class BlockRunnerFrame(StageFrame):
         """Black-screen view shown for the duration of the block.
 
         Hides the pre-block instructions; shows just "Your eyes should be
-        closed.\\n\\nThis is the {TYPE} block." centered in the body.
+        closed.\\n\\nThis is the {TYPE} block." centered in the body. Swaps
+        the frame + child labels into pure-contrast task mode (the chrome
+        purple/grey is reserved for between-block screens).
         """
         block = self._block
         assert block is not None
         label = block_type_label(block.condition)
+        self._apply_task_theme()
         self.title_var.set("")
         self.body_var.set(f"Your eyes should be closed.\n\nThis is the {label} block.")
         self.status_var.set("")
+
+    def _apply_task_theme(self) -> None:
+        """Switch the frame + labels to pure black/white task mode."""
+        self.configure(bg=theme.TASK_BG)
+        for w in (self._title_label, self._body_label, self._status_label):
+            w.configure(bg=theme.TASK_BG, fg=theme.TASK_TEXT)
+        if self._footer_label is not None:
+            self._footer_label.configure(bg=theme.TASK_BG, fg="#444444")
+
+    def _apply_chrome_theme(self) -> None:
+        """Restore the IACS chrome theme (used when re-entering the stage)."""
+        self.configure(bg=theme.CHROME_BG)
+        self._title_label.configure(bg=theme.CHROME_BG, fg=theme.ACCENT_LIGHT)
+        self._body_label.configure(bg=theme.CHROME_BG, fg=theme.TEXT)
+        self._status_label.configure(bg=theme.CHROME_BG, fg=theme.TEXT_MUTED)
+        if self._footer_label is not None:
+            self._footer_label.configure(bg=theme.CHROME_BG, fg=theme.TEXT_MUTED)
 
     def _begin_block(self) -> None:
         block = self._block

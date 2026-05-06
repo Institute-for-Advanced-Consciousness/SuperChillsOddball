@@ -12,6 +12,7 @@ import threading
 import tkinter as tk
 from typing import Any
 
+from .. import theme
 from ..audio import play_reference_tone
 from ..config import REPO_ROOT
 from ._base import StageFrame
@@ -25,14 +26,14 @@ class VolumeCheckFrame(StageFrame):
 
     def build(self) -> None:
         cfg = self.app.config.display
-        self.configure(bg=cfg.background_color)
+        self.configure(bg=theme.CHROME_BG)
 
         tk.Label(
             self,
             text="Volume check",
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
         ).pack(pady=(80, 20))
 
         self.body_var = tk.StringVar(
@@ -46,8 +47,8 @@ class VolumeCheckFrame(StageFrame):
             self,
             textvariable=self.body_var,
             font=(cfg.font_family, cfg.font_size_instruction),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
             wraplength=900,
             justify="center",
         ).pack(pady=20)
@@ -57,8 +58,8 @@ class VolumeCheckFrame(StageFrame):
             self,
             textvariable=self.status_var,
             font=(cfg.font_family, cfg.font_size_normal, "italic"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT_MUTED,
+            bg=theme.CHROME_BG,
         ).pack(pady=10)
 
         self._stop_event: threading.Event | None = None

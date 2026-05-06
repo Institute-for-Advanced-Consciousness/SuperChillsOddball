@@ -17,6 +17,7 @@ import tkinter as tk
 from pathlib import Path
 from typing import Any
 
+from .. import theme
 from ..config import REPO_ROOT
 from ..persistence import SessionWriter, next_participant_id
 from ..schedule import generate_session_schedule, resolve_seed
@@ -30,32 +31,32 @@ class IntakeFrame(StageFrame):
 
     def build(self) -> None:
         cfg = self.app.config.display
-        self.configure(bg=cfg.background_color)
+        self.configure(bg=theme.CHROME_BG)
 
         tk.Label(
             self,
             text=f"{self.app.config.session.protocol_label}",
             font=(cfg.font_family, cfg.font_size_heading, "bold"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.ACCENT_LIGHT,
+            bg=theme.CHROME_BG,
         ).pack(pady=(40, 6))
         tk.Label(
             self,
             text=f"protocol: {self.app.config.session.protocol_id}",
             font=(cfg.font_family, cfg.font_size_normal, "italic"),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT_MUTED,
+            bg=theme.CHROME_BG,
         ).pack(pady=(0, 20))
 
         # Participant ID row.
-        pid_row = tk.Frame(self, bg=cfg.background_color)
+        pid_row = tk.Frame(self, bg=theme.CHROME_BG)
         pid_row.pack(pady=10)
         tk.Label(
             pid_row,
             text="Participant ID:",
             font=(cfg.font_family, cfg.font_size_instruction),
-            fg=cfg.text_color,
-            bg=cfg.background_color,
+            fg=theme.TEXT,
+            bg=theme.CHROME_BG,
         ).pack(side="left", padx=10)
         self._pid_var = tk.StringVar(value="")
         tk.Entry(
@@ -63,23 +64,36 @@ class IntakeFrame(StageFrame):
             textvariable=self._pid_var,
             font=(cfg.font_family, cfg.font_size_instruction),
             width=12,
+            bg=theme.SURFACE,
+            fg=theme.TEXT,
+            insertbackground=theme.ACCENT_LIGHT,
+            relief="flat",
+            highlightthickness=2,
+            highlightbackground=theme.ACCENT_DARK,
+            highlightcolor=theme.ACCENT_LIGHT,
         ).pack(side="left")
 
         # Two-column body: parameter summary | pre-flight.
-        body = tk.Frame(self, bg=cfg.background_color)
+        body = tk.Frame(self, bg=theme.CHROME_BG)
         body.pack(fill="both", expand=True, padx=40, pady=20)
 
         self._summary_text = tk.Text(
             body, width=60, height=18,
             font=(cfg.font_family, cfg.font_size_normal),
-            bg="#1a1a1a", fg=cfg.text_color, relief="flat",
+            bg=theme.SURFACE, fg=theme.TEXT, relief="flat",
+            insertbackground=theme.ACCENT_LIGHT,
+            highlightthickness=1,
+            highlightbackground=theme.DIVIDER,
         )
         self._summary_text.pack(side="left", padx=10, fill="both", expand=True)
 
         self._preflight_text = tk.Text(
             body, width=40, height=18,
             font=(cfg.font_family, cfg.font_size_normal),
-            bg="#1a1a1a", fg=cfg.text_color, relief="flat",
+            bg=theme.SURFACE, fg=theme.TEXT, relief="flat",
+            insertbackground=theme.ACCENT_LIGHT,
+            highlightthickness=1,
+            highlightbackground=theme.DIVIDER,
         )
         self._preflight_text.pack(side="left", padx=10, fill="both", expand=True)
 
@@ -89,6 +103,9 @@ class IntakeFrame(StageFrame):
             font=(cfg.font_family, cfg.font_size_instruction, "bold"),
             width=24,
             command=self._on_begin,
+            padx=12,
+            pady=8,
+            **theme.PRIMARY_BUTTON,
         )
         self._begin_btn.pack(pady=20)
 
@@ -97,8 +114,8 @@ class IntakeFrame(StageFrame):
             self,
             textvariable=self._error_var,
             font=(cfg.font_family, cfg.font_size_normal),
-            fg="#ff6666",
-            bg=cfg.background_color,
+            fg="#ff8888",
+            bg=theme.CHROME_BG,
         ).pack(pady=(0, 10))
 
     # ------------------------------------------------------------ on_enter
