@@ -107,19 +107,29 @@ class RatingsChillsFrame(StageFrame):
                 self._vars[item.id] = var
                 btn_frame = tk.Frame(row, bg=cfg.background_color)
                 btn_frame.pack(anchor="w")
+                # `indicatoron=False` renders each option as a button. The
+                # selected one shows pressed/highlighted; the rest show
+                # normal — unambiguous on a dark background. Avoids the
+                # "selectcolor=black on bg=black makes the selected dot
+                # invisible" trap of the indicator style.
                 for option in item.options:
                     tk.Radiobutton(
                         btn_frame,
-                        text=option,
+                        text=f"  {option}  ",
                         value=option,
                         variable=var,
+                        indicatoron=False,
                         font=(cfg.font_family, cfg.font_size_normal),
                         fg=cfg.text_color,
-                        bg=cfg.background_color,
-                        selectcolor=cfg.background_color,
-                        activebackground=cfg.background_color,
+                        bg="#222222",
+                        selectcolor="#3478f6",  # bright blue when selected
+                        activebackground="#333333",
                         activeforeground=cfg.text_color,
-                    ).pack(side="left", padx=10)
+                        relief="raised",
+                        borderwidth=2,
+                        padx=12,
+                        pady=4,
+                    ).pack(side="left", padx=8)
 
             elif isinstance(item, SpinnerIntItem):
                 var = tk.IntVar(value=item.default)
