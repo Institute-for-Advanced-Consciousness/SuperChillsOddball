@@ -617,7 +617,7 @@ class ActiveOddballFrame(StageFrame):
         self._engagement_widgets.append(scale)
         self._engagement_var.trace_add(
             "write",
-            lambda *_a, v=self._engagement_var, l=value_lbl: l.configure(
+            lambda *_a, v=self._engagement_var, lbl=value_lbl: lbl.configure(
                 text=f"Selected: {v.get()}"
             ),
         )

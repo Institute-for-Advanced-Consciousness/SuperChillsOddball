@@ -116,7 +116,7 @@ class RatingsRestFrame(StageFrame):
                 ).pack(anchor="w", pady=8, fill="x")
                 var.trace_add(
                     "write",
-                    lambda *_a, v=var, l=value_lbl: l.configure(text=f"Selected: {v.get()}"),
+                    lambda *_a, v=var, lbl=value_lbl: lbl.configure(text=f"Selected: {v.get()}"),
                 )
                 if item.anchors:
                     parts = [f"{k} = {v}" for k, v in sorted(item.anchors.items())]

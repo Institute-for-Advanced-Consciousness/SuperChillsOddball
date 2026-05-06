@@ -146,7 +146,7 @@ class RatingsChillsFrame(StageFrame):
                 value_lbl.pack(anchor="w", pady=(4, 0))
                 var.trace_add(
                     "write",
-                    lambda *_a, v=var, l=value_lbl: l.configure(
+                    lambda *_a, v=var, lbl=value_lbl: lbl.configure(
                         text=f"Selected: {v.get() or '(none yet)'}"
                     ),
                 )
@@ -180,7 +180,7 @@ class RatingsChillsFrame(StageFrame):
                 value_lbl.pack(side="left", padx=12)
                 var.trace_add(
                     "write",
-                    lambda *_a, v=var, l=value_lbl: l.configure(text=f"  Selected: {v.get()}"),
+                    lambda *_a, v=var, lbl=value_lbl: lbl.configure(text=f"  Selected: {v.get()}"),
                 )
 
             elif isinstance(item, SliderItem):
@@ -213,7 +213,7 @@ class RatingsChillsFrame(StageFrame):
                 ).pack(anchor="w", fill="x")
                 var.trace_add(
                     "write",
-                    lambda *_a, v=var, l=value_lbl: l.configure(text=f"Selected: {v.get()}"),
+                    lambda *_a, v=var, lbl=value_lbl: lbl.configure(text=f"Selected: {v.get()}"),
                 )
                 if item.anchors:
                     parts = [f"{k}={v}" for k, v in sorted(item.anchors.items())]
