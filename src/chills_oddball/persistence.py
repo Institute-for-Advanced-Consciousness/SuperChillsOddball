@@ -200,6 +200,20 @@ class SessionWriter:
         self._write_block_csv(record)
         self._write_partial()
 
+    def set_block_ratings(self, idx: int, ratings: dict[str, Any]) -> None:
+        """Attach ratings to an already-ended block and refresh PARTIAL.
+
+        Used by the post-block ratings panels — block_runner writes the CSV
+        and emits the end markers immediately, then the next stage gathers
+        the participant's ratings and stamps them onto the same record.
+        """
+        for rec in self.blocks:
+            if rec.idx == idx:
+                rec.ratings = ratings
+                self._write_partial()
+                return
+        raise KeyError(f"no block with idx={idx} in current session")
+
     # ------- summaries / finalization ---------------------------------------
 
     def set_active_oddball_summary(self, summary: dict[str, Any]) -> None:

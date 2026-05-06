@@ -3,17 +3,11 @@
 Mocks outlet / audio_scheduler / writer so we exercise the full lifecycle
 (start markers -> gong -> block body -> end markers -> CSV write -> route
 to ratings) without real audio hardware.
-
-Tk on the uv-managed python-build-standalone distribution exhausts some
-internal handle pool after a handful of full Tk() inits in the same
-process. We therefore use a *module-scoped* App fixture (one Tk init for
-the whole file) and reset services + show a neutral stage between tests.
 """
 
 from __future__ import annotations
 
 import time
-import tkinter as tk
 from dataclasses import dataclass, field
 
 import pytest
@@ -26,17 +20,9 @@ from chills_oddball.schedule import (
 )
 
 
-@pytest.fixture(scope="module")
-def app():
-    """Single App per module — survives the Tk-init handle limit on uv Python."""
-    try:
-        from chills_oddball.app import App
-
-        a = App()
-    except tk.TclError as e:
-        pytest.skip(f"Tk display not available: {e}")
-    yield a
-    a.shutdown()
+@pytest.fixture
+def app(shared_app):
+    return shared_app
 
 
 @pytest.fixture(autouse=True)
