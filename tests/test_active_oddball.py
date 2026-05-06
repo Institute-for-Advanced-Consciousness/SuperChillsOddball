@@ -192,22 +192,34 @@ class MockOutlet:
 
 @dataclass
 class MockWriter:
+    """Stores BlockRecord objects so the completion stage's summary works."""
+
     blocks: list = field(default_factory=list)
     ended: list = field(default_factory=list)
     summary: dict | None = None
+    participant_id: str = "P_TEST"
+    active_oddball_summary: dict | None = None
 
     def start_block(self, *, idx, condition, duration_s, start_lsl):
-        rec = {"idx": idx, "condition": condition, "duration_s": duration_s,
-               "start_lsl": start_lsl}
+        from chills_oddball.persistence import BlockRecord
+
+        rec = BlockRecord(
+            idx=idx, condition=condition, duration_s=duration_s,
+            start_lsl=start_lsl, status="pending",
+        )
         self.blocks.append(rec)
         return rec
 
     def end_block(self, *, record, end_lsl, trials, ratings, status):
+        record.end_lsl = end_lsl
+        record.status = status
+        record.ratings = ratings
         self.ended.append({"record": record, "end_lsl": end_lsl,
                            "trials": trials, "status": status})
 
     def set_active_oddball_summary(self, summary):
         self.summary = summary
+        self.active_oddball_summary = summary
 
 
 @pytest.fixture(autouse=True)

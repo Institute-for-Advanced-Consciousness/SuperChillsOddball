@@ -75,13 +75,15 @@ class App:
         # Reasonable starting geometry; fullscreen is wired in Step 13.
         self.root.geometry("1024x720")
 
-        # Runtime services attached in later build steps.
+        # Runtime services attached by the intake stage on Begin Session.
         self.outlet = None  # ChillsMarkerOutlet
         self.audio_scheduler = None  # ToneScheduler
         self.writer = None  # SessionWriter
 
-        # Schedule + cursor — populated by the intake stage in Step 13.
+        # Session metadata populated by intake.
         self.schedule: list = []
+        self.rng_seed: int | None = None
+        self.participant_id: str | None = None
         self._frames: dict[str, StageFrame] = {}
         self._current: str | None = None
         self._register_frames(_STAGE_CLASSES)
