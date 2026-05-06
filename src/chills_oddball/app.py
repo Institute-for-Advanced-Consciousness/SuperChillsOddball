@@ -80,6 +80,8 @@ class App:
         self.audio_scheduler = None  # ToneScheduler
         self.writer = None  # SessionWriter
 
+        # Schedule + cursor — populated by the intake stage in Step 13.
+        self.schedule: list = []
         self._frames: dict[str, StageFrame] = {}
         self._current: str | None = None
         self._register_frames(_STAGE_CLASSES)
@@ -118,6 +120,39 @@ class App:
     @property
     def stages(self) -> dict[str, StageFrame]:
         return dict(self._frames)
+
+    # ----- block-flow routing --------------------------------------------
+
+    def show_block(self, block_idx: int) -> None:
+        """Route to the right stage for the schedule entry at ``block_idx``.
+
+        - ``calibration`` -> calibration_chills
+        - ``active_oddball`` -> active_oddball
+        - everything else -> block_runner with the ScheduledBlock as payload
+        """
+        if not self.schedule:
+            raise RuntimeError("no schedule loaded; intake stage must populate it")
+        if not (0 <= block_idx < len(self.schedule)):
+            raise IndexError(f"block_idx {block_idx} out of range (0..{len(self.schedule) - 1})")
+        block = self.schedule[block_idx]
+        if block.condition == "calibration":
+            self.show_stage("calibration_chills", block=block)
+        elif block.condition == "active_oddball":
+            self.show_stage("active_oddball", block=block)
+        else:
+            self.show_stage("block_runner", block=block)
+
+    def advance_after_block(self, finished_block_idx: int) -> None:
+        """Called by ratings panels (and active oddball) to move forward.
+
+        If another block follows, route there. Otherwise show the
+        completion stage.
+        """
+        next_idx = finished_block_idx + 1
+        if next_idx >= len(self.schedule):
+            self.show_stage("completion")
+        else:
+            self.show_block(next_idx)
 
     # ----- lifecycle ------------------------------------------------------
 
