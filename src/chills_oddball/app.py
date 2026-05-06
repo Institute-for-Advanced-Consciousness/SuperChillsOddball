@@ -258,13 +258,81 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run_self_check(config_path: str | None) -> int:
-    """Stub for Step 16. Returns 0 if config loads + critical modules import."""
+    """Confirm the install is good: config loads, LSL outlet opens, audio device
+    opens, tone assets exist. Returns 0 on success, 1 on any failure.
+
+    Used by INSTALL.bat after first-run setup. Designed to print a clean
+    OK/FAIL line per check so a non-tech user can see what's wrong.
+    """
+    failures: list[str] = []
+
+    # 1) Config
     try:
         cfg = load_config(config_path)
-    except Exception as e:  # noqa: BLE001 — surface to install script
-        print(f"FAIL: config load: {e}", file=sys.stderr)
+        print(f"OK   config loaded                  {cfg.session.protocol_id}")
+    except Exception as e:  # noqa: BLE001
+        print(f"FAIL config load                    {e}", file=sys.stderr)
         return 1
-    print(f"OK: config loaded ({cfg.session.protocol_id})")
+
+    # 2) Tone .wav assets
+    from .config import REPO_ROOT
+    missing: list[str] = []
+    for label, rel in [
+        ("standard tone", cfg.audio.files.tone_standard),
+        ("deviant tone",  cfg.audio.files.tone_deviant),
+        ("ref tone",      cfg.audio.files.volume_reference),
+        ("gong start",    cfg.audio.files.gong_start),
+        ("gong end",      cfg.audio.files.gong_end),
+    ]:
+        p = REPO_ROOT / rel
+        if not p.exists():
+            missing.append(f"{label}: {p}")
+    if missing:
+        for m in missing:
+            print(f"FAIL audio asset missing            {m}", file=sys.stderr)
+        print("     fix: run `uv run python scripts/generate_tones.py`")
+        failures.append("audio assets missing")
+    else:
+        print(f"OK   {len([1])*5} audio assets present       at assets/sounds/")
+
+    # 3) LSL outlet
+    try:
+        from .markers import ChillsMarkerOutlet
+        outlet = ChillsMarkerOutlet(cfg.lsl)
+        outlet.open()
+        outlet.close()
+        print(f"OK   LSL outlet opens               {cfg.lsl.stream_name}")
+    except Exception as e:  # noqa: BLE001
+        print(f"FAIL LSL outlet                     {e}", file=sys.stderr)
+        failures.append("LSL outlet")
+
+    # 4) Audio device
+    try:
+        import sounddevice as sd
+        # query_devices() raises if PortAudio can't open. We don't actually
+        # play anything — that's the volume-check step.
+        info = sd.query_devices(cfg.audio.device_name, "output")
+        name = info["name"] if isinstance(info, dict) else str(info)
+        print(f"OK   audio device available         {name}")
+    except Exception as e:  # noqa: BLE001
+        print(f"FAIL audio device                   {e}", file=sys.stderr)
+        failures.append("audio device")
+
+    # 5) Tk
+    try:
+        import tkinter as tk
+        r = tk.Tk()
+        r.withdraw()
+        r.destroy()
+        print("OK   Tk display available")
+    except Exception as e:  # noqa: BLE001
+        print(f"FAIL Tk display                     {e}", file=sys.stderr)
+        failures.append("Tk")
+
+    if failures:
+        print(f"\nSELF-CHECK FAILED: {', '.join(failures)}", file=sys.stderr)
+        return 1
+    print("\nSELF-CHECK OK — ready to launch")
     return 0
 
 

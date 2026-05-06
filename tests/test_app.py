@@ -32,8 +32,24 @@ def test_show_stage_unknown_raises(app):
         app.show_stage("nope")
 
 
-def test_main_self_check_returns_zero():
-    """The --self-check stub should at least confirm config loads."""
+def test_main_self_check_returns_zero(capsys):
+    """End-to-end self-check on this dev box: every line should be OK."""
     from chills_oddball.app import main
 
-    assert main(["--self-check"]) == 0
+    rc = main(["--self-check"])
+    captured = capsys.readouterr()
+    output = captured.out + captured.err
+    # Every line in the self-check should report OK (or be info we don't grade on).
+    assert "FAIL" not in output, f"self-check reported FAIL:\n{output}"
+    assert "config loaded" in output
+    assert "audio assets present" in output
+    assert "LSL outlet opens" in output
+    assert rc == 0
+
+
+def test_main_self_check_fails_when_config_missing(tmp_path):
+    """Pointing --config at a non-existent file must exit non-zero."""
+    from chills_oddball.app import main
+
+    rc = main(["--self-check", "--config", str(tmp_path / "nope.yaml")])
+    assert rc == 1
