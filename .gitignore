@@ -9,3 +9,21 @@ desktop.ini
 *.swo
 .idea/
 .vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# uv / venv
+.venv/
+
+# Build / dist
+build/
+dist/
+
+# Per-participant data — never tracked
+Data/
