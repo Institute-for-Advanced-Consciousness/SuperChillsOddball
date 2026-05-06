@@ -44,6 +44,21 @@ CHILLS_CONDITIONS = {"chills_only", "chills_oddball_passive", "calibration"}
 ODDBALL_CONDITIONS = {"chills_oddball_passive", "rest_oddball_passive"}
 
 
+_BLOCK_TYPE_LABELS = {
+    "chills_only": "CHILLS",
+    "chills_oddball_passive": "CHILLS",
+    "rest_only": "REST",
+    "rest_oddball_passive": "REST",
+    "calibration": "CALIBRATION CHILLS",
+    "active_oddball": "ACTIVE LISTENING",
+}
+
+
+def block_type_label(condition: str) -> str:
+    """Human-friendly block-type label for the in-block 'eyes closed' screen."""
+    return _BLOCK_TYPE_LABELS.get(condition, condition.upper())
+
+
 class BlockRunnerFrame(StageFrame):
     NAME = "block_runner"
 
@@ -148,10 +163,26 @@ class BlockRunnerFrame(StageFrame):
         self._space_binding = None
         self._begin_block()
 
+    def _show_eyes_closed_view(self) -> None:
+        """Black-screen view shown for the duration of the block.
+
+        Hides the pre-block instructions; shows just "Your eyes should be
+        closed.\\n\\nThis is the {TYPE} block." centered in the body.
+        """
+        block = self._block
+        assert block is not None
+        label = block_type_label(block.condition)
+        self.title_var.set("")
+        self.body_var.set(f"Your eyes should be closed.\n\nThis is the {label} block.")
+        self.status_var.set("")
+
     def _begin_block(self) -> None:
         block = self._block
         assert block is not None
-        self.status_var.set("Block in progress — eyes closed.")
+        # Swap the screen to the eyes-closed view immediately. The start gong
+        # plays while this is shown; the screen stays put for the entire
+        # block body, then we advance to the rating panel.
+        self._show_eyes_closed_view()
 
         # Open writer record + emit block_start marker.
         self._block_start_lsl = self._lsl_now()

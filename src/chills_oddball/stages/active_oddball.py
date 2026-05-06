@@ -402,9 +402,15 @@ class ActiveOddballFrame(StageFrame):
         assert block is not None
         self._phase = PHASE_MAIN
         self._press_log = []
-        self.title_var.set("Active oddball — main block")
-        self.body_var.set("Press SPACE on every HIGH tone. Eyes closed.")
-        self.status_var.set("Main block in progress…")
+        # Eyes-closed view tailored for the active block (still need the
+        # spacebar reminder since this is the responding phase).
+        self.title_var.set("")
+        self.body_var.set(
+            "Your eyes should be closed.\n\n"
+            "This is the ACTIVE LISTENING block.\n\n"
+            "Press SPACE on every HIGH tone."
+        )
+        self.status_var.set("")
         self.footer_var.set(f"[RA] phase=main block.idx={block.idx}")
 
         # Open writer record + emit block_start.

@@ -103,6 +103,17 @@ def test_calibration_uses_calibration_chills_instruction_text(app):
     assert "30" in body or "chills" in body.lower()
 
 
+def test_calibration_eyes_closed_view_shown_after_space(app):
+    block = ScheduledBlock(idx=0, condition="calibration", duration_s=0)
+    app.show_stage("calibration_chills", block=block)
+    frame = app.stages["calibration_chills"]
+    frame._on_space()
+    body = frame.body_var.get()
+    assert "Your eyes should be closed" in body
+    assert "CALIBRATION CHILLS" in body
+    _wait_for_stage(app, "ratings_chills")
+
+
 def test_calibration_emits_full_marker_chain_in_order(app):
     """block_start -> calibration_start -> gong_start -> gong_end -> calibration_end -> block_end"""
     app.outlet = MockOutlet()

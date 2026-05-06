@@ -157,6 +157,23 @@ def test_on_enter_requires_block_payload(app):
 # ---------------------------------------------------------------------------
 
 
+def test_eyes_closed_view_shown_after_space(app):
+    """After SPACE, the body should switch to the 'eyes closed' message."""
+    block = _short_silent_block("rest_only", duration_s=0)
+    app.show_stage("block_runner", block=block)
+    frame = app.stages["block_runner"]
+    # Pre-SPACE: shows pre-block instructions.
+    assert "Your eyes should be closed" not in frame.body_var.get()
+    frame._on_space()
+    # Now the body should be the eyes-closed message; title and status empty.
+    body = frame.body_var.get()
+    assert "Your eyes should be closed" in body
+    assert "REST" in body
+    assert frame.title_var.get() == ""
+    assert frame.status_var.get() == ""
+    _wait_for_stage(app, target="ratings_rest")
+
+
 def test_silent_chills_block_completes_and_routes_to_ratings_chills(app):
     app.outlet = MockOutlet()
     app.writer = MockWriter()

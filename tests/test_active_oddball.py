@@ -348,6 +348,28 @@ def test_active_main_block_writes_summary_and_advances_to_completion(app):
     assert len(app.writer.ended) == 1
 
 
+def test_active_main_shows_eyes_closed_view(app, monkeypatch):
+    """The active-main phase shows the eyes-closed body with the SPACE reminder.
+
+    We patch _launch_audio_worker so the worker never auto-completes —
+    otherwise the no-audio path fabricates records instantly and the
+    phase races to 'engagement' before we can read the body text.
+    """
+    app.outlet = MockOutlet()
+    app.writer = MockWriter()
+    block = ScheduledBlock(idx=17, condition="active_oddball", duration_s=300)
+    app.show_stage("active_oddball", block=block)
+    frame = app.stages["active_oddball"]
+    # Suppress the audio worker so _start_main returns with phase=='main'.
+    monkeypatch.setattr(frame, "_launch_audio_worker", lambda **kw: None)
+    frame._start_main()
+    assert frame._phase == "main"
+    body = frame.body_var.get()
+    assert "Your eyes should be closed" in body
+    assert "ACTIVE LISTENING" in body
+    assert "SPACE" in body
+
+
 def test_active_main_emits_response_markers_for_all_deviants(app):
     app.outlet = MockOutlet()
     app.writer = MockWriter()

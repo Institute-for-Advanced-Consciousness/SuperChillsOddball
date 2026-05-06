@@ -47,7 +47,7 @@ class CalibrationChillsFrame(BlockRunnerFrame):
         # split super's work — emit our marker before the worker spawns.
         block = self._block
         assert block is not None
-        self.status_var.set("Calibration in progress — eyes closed.")
+        self._show_eyes_closed_view()
 
         self._block_start_lsl = self._lsl_now()
         if self.app.outlet is not None:
