@@ -27,3 +27,6 @@ dist/
 
 # Per-participant data — never tracked
 Data/
+
+# Sample / test recordings (XDFs, raw EEG dumps) — kept locally only
+SampleData/

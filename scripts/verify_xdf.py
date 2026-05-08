@@ -72,9 +72,14 @@ def load_markers(xdf_path: Path, stream_name: str) -> list[ParsedMarker]:
         names = info.get("name") or []
         if not names or names[0] != stream_name:
             continue
-        timestamps = s.get("time_stamps") or []
+        timestamps = s.get("time_stamps")
+        if timestamps is None:
+            timestamps = []
+        time_series = s.get("time_series")
+        if time_series is None:
+            time_series = []
         # XDF marker streams come as list-of-1-string lists.
-        for ts, sample in zip(timestamps, s.get("time_series") or [], strict=False):
+        for ts, sample in zip(timestamps, time_series, strict=False):
             text = sample[0] if isinstance(sample, (list, tuple)) else sample
             out.append(parse_marker(str(text), float(ts)))
     out.sort(key=lambda m: m.timestamp)

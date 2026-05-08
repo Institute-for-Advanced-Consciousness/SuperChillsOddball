@@ -86,8 +86,25 @@ class App:
         # Scale fonts to the actual screen so dense screens (intake) fit.
         self._scale_display_fonts()
 
-        # Runtime services attached by the intake stage on Begin Session.
-        self.outlet = None  # ChillsMarkerOutlet
+        # The LSL marker outlet is created at app boot — not at Begin
+        # Session — so LabRecorder discovers the stream while the RA is
+        # still on the intake screen ticking the pre-flight checklist
+        # (one item of which is "LabRecorder is recording the stream").
+        # Session-level markers (session_start, participant_id,
+        # session_config_seed) are still pushed from intake on Begin,
+        # since they depend on the entered PID and resolved seed.
+        from .markers import ChillsMarkerOutlet
+
+        self.outlet: ChillsMarkerOutlet | None = ChillsMarkerOutlet(self.config.lsl)
+        self.outlet.open()
+        logger.info(
+            "LSL outlet open at boot: name=%r source_id=%r",
+            self.config.lsl.stream_name,
+            self.config.lsl.source_id,
+        )
+
+        # Other runtime services are attached by intake on Begin Session,
+        # since they depend on the participant ID / resolved schedule.
         self.audio_scheduler = None  # ToneScheduler
         self.writer = None  # SessionWriter
 
@@ -255,6 +272,14 @@ class App:
         self.root.mainloop()
 
     def shutdown(self) -> None:
+        # Close the outlet if abort/completion didn't already do it
+        # (e.g., the operator closed the window from the intake screen
+        # before starting a session).
+        if self.outlet is not None and self.outlet.is_open:
+            try:
+                self.outlet.close()
+            except Exception:  # noqa: BLE001
+                logger.exception("outlet.close failed during shutdown")
         try:
             self.root.destroy()
         except tk.TclError:

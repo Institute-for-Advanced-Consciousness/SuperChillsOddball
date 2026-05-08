@@ -5,8 +5,10 @@ Shows:
   - A read-only summary of paradigm-fixed and operator-tunable params
   - "Begin Session" button that:
       1. resolves the RNG seed and generates the schedule,
-      2. opens the LSL outlet + ToneScheduler + SessionWriter,
-      3. emits session_start / participant_id / session_config_seed markers,
+      2. constructs the ToneScheduler + SessionWriter (PID-dependent),
+      3. emits session_start / participant_id / session_config_seed markers
+         on the outlet that was already opened at app boot
+         (so LabRecorder sees the stream while the RA fills the checklist),
       4. advances to the volume_check stage.
 """
 
@@ -180,9 +182,10 @@ class IntakeFrame(StageFrame):
         tk.Label(
             self._preflight_frame,
             text=(
-                "Begin Session will: create the LSL outlet, "
-                "generate the block schedule, and open the "
-                "participant data folder."
+                "The LSL marker stream is already broadcasting — "
+                "confirm LabRecorder sees it before continuing. "
+                "Begin Session will generate the block schedule "
+                "and open the participant data folder."
             ),
             font=(cfg.font_family, cfg.font_size_normal - 2, "italic"),
             fg=theme.TEXT_MUTED,
@@ -266,7 +269,6 @@ class IntakeFrame(StageFrame):
 
     def _initialize_services(self, pid: str) -> None:
         from ..audio import ToneScheduler
-        from ..markers import ChillsMarkerOutlet
 
         cfg = self.app.config
 
@@ -275,10 +277,13 @@ class IntakeFrame(StageFrame):
         self.app.schedule = generate_session_schedule(cfg, seed=seed, participant_id=pid)
         self.app.rng_seed = seed
 
-        # Open marker outlet.
-        outlet = ChillsMarkerOutlet(cfg.lsl)
-        outlet.open()
-        self.app.outlet = outlet
+        # The marker outlet was opened at app boot (so LabRecorder
+        # discovers the stream while the RA fills the checklist).
+        outlet = self.app.outlet
+        if outlet is None or not outlet.is_open:
+            raise RuntimeError(
+                "LSL outlet is not open — app boot may have failed to create it."
+            )
 
         # Open SessionWriter.
         data_root = Path(cfg.session.data_root_dir)
